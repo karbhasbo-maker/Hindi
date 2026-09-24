@@ -1,6 +1,7 @@
 package com.example
 
 import com.example.data.model.BarahkhadiData
+import com.example.data.model.HindiWordData
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -42,5 +43,20 @@ class ExampleUnitTest {
 
         assertEquals("का", combKaa.hindi)
         assertEquals("Kaa", combKaa.english)
+    }
+
+    @Test
+    fun wordMaker_presetWords_arePopulatedAndValid() {
+        assertTrue(HindiWordData.PRESET_WORDS.size >= 50)
+        val kamal = HindiWordData.findWord("कमल")
+        assertNotNull(kamal)
+        assertEquals("Lotus Flower", kamal?.meaning)
+        assertEquals(listOf("क", "म", "ल"), kamal?.syllables)
+    }
+
+    @Test
+    fun wordMaker_approximateTransliteration_works() {
+        val trans = HindiWordData.approximateTransliteration(listOf("कि", "ता", "ब"))
+        assertEquals("Kitaab", trans)
     }
 }

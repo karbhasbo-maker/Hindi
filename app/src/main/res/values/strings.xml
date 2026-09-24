@@ -3,6 +3,7 @@
     <string name="app_tagline">Master Hindi Pronunciation &amp; Phonetics with English</string>
     <string name="tab_explorer">Explorer</string>
     <string name="tab_matrix">Master Chart</string>
+    <string name="tab_words">Words</string>
     <string name="tab_vowels">Swar &amp; Matra</string>
     <string name="tab_quiz">Practice &amp; Quiz</string>
     <string name="tab_canvas">Writing Pad</string>

@@ -11,6 +11,8 @@ import com.example.data.local.entity.LearningStatsEntity
 import com.example.data.local.entity.QuizScoreRecord
 import com.example.data.model.BarahkhadiData
 import com.example.data.model.Consonant
+import com.example.data.model.HindiWord
+import com.example.data.model.HindiWordData
 import com.example.data.model.Matra
 import com.example.data.model.SyllableCombination
 import com.example.data.repository.BarahkhadiRepository
@@ -29,7 +31,7 @@ import kotlin.coroutines.resume
 enum class AppTab {
     EXPLORER,
     MASTER_CHART,
-    VOWELS_GUIDE,
+    WORD_MAKER,
     PRACTICE_QUIZ,
     WRITING_PAD
 }
@@ -151,6 +153,35 @@ class BarahkhadiViewModel(application: Application) : AndroidViewModel(applicati
     private val _canvasClearTrigger = MutableStateFlow(0L)
     val canvasClearTrigger: StateFlow<Long> = _canvasClearTrigger.asStateFlow()
 
+    // Word Maker (शब्द निर्माता) State
+    private val _wordBuilderSyllables = MutableStateFlow<List<String>>(listOf("क", "म", "ल"))
+    val wordBuilderSyllables: StateFlow<List<String>> = _wordBuilderSyllables.asStateFlow()
+
+    private val _selectedWordCategory = MutableStateFlow("All Words")
+    val selectedWordCategory: StateFlow<String> = _selectedWordCategory.asStateFlow()
+
+    private val _wordSearchQuery = MutableStateFlow("")
+    val wordSearchQuery: StateFlow<String> = _wordSearchQuery.asStateFlow()
+
+    // Word Maker Challenge Puzzle State
+    private val _challengeTargetWord = MutableStateFlow<HindiWord?>(null)
+    val challengeTargetWord: StateFlow<HindiWord?> = _challengeTargetWord.asStateFlow()
+
+    private val _challengeOptions = MutableStateFlow<List<String>>(emptyList())
+    val challengeOptions: StateFlow<List<String>> = _challengeOptions.asStateFlow()
+
+    private val _challengeCurrentInput = MutableStateFlow<List<String>>(emptyList())
+    val challengeCurrentInput: StateFlow<List<String>> = _challengeCurrentInput.asStateFlow()
+
+    private val _challengeScore = MutableStateFlow(0)
+    val challengeScore: StateFlow<Int> = _challengeScore.asStateFlow()
+
+    private val _challengeStreak = MutableStateFlow(0)
+    val challengeStreak: StateFlow<Int> = _challengeStreak.asStateFlow()
+
+    private val _challengeIsSolved = MutableStateFlow(false)
+    val challengeIsSolved: StateFlow<Boolean> = _challengeIsSolved.asStateFlow()
+
     // Modals
     private val _showInfoDialog = MutableStateFlow(false)
     val showInfoDialog: StateFlow<Boolean> = _showInfoDialog.asStateFlow()
@@ -161,6 +192,7 @@ class BarahkhadiViewModel(application: Application) : AndroidViewModel(applicati
     init {
         initFlashcards()
         startSpeedQuiz()
+        startNewWordChallenge()
     }
 
     fun setTab(tab: AppTab) {
@@ -448,6 +480,84 @@ class BarahkhadiViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setShowFavoritesSheet(show: Boolean) {
         _showFavoritesSheet.value = show
+    }
+
+    // Word Maker (शब्द मेकर) Methods
+    fun addWordSyllable(syllable: String) {
+        if (_wordBuilderSyllables.value.size < 10) {
+            _wordBuilderSyllables.value = _wordBuilderSyllables.value + syllable
+            speak(syllable)
+        }
+    }
+
+    fun removeLastWordSyllable() {
+        if (_wordBuilderSyllables.value.isNotEmpty()) {
+            _wordBuilderSyllables.value = _wordBuilderSyllables.value.dropLast(1)
+        }
+    }
+
+    fun removeWordSyllableAt(index: Int) {
+        if (index in _wordBuilderSyllables.value.indices) {
+            val list = _wordBuilderSyllables.value.toMutableList()
+            list.removeAt(index)
+            _wordBuilderSyllables.value = list
+        }
+    }
+
+    fun clearWordBuilder() {
+        _wordBuilderSyllables.value = emptyList()
+    }
+
+    fun loadPresetWord(word: HindiWord) {
+        _wordBuilderSyllables.value = word.syllables
+        speak(word.hindi)
+    }
+
+    fun speakFullWord(text: String) {
+        speak(text)
+    }
+
+    fun setWordSearchQuery(query: String) {
+        _wordSearchQuery.value = query
+    }
+
+    fun setSelectedWordCategory(cat: String) {
+        _selectedWordCategory.value = cat
+    }
+
+    // Word Maker Challenge Puzzle Game
+    fun startNewWordChallenge() {
+        val word = HindiWordData.PRESET_WORDS.random()
+        _challengeTargetWord.value = word
+        _challengeCurrentInput.value = emptyList()
+        _challengeIsSolved.value = false
+
+        // Correct syllables + distractors from barahkhadi
+        val distractors = BarahkhadiData.CONSONANTS.shuffled().take(3).map { it.char }
+        _challengeOptions.value = (word.syllables + distractors).shuffled()
+    }
+
+    fun tapChallengeOption(syllable: String) {
+        val target = _challengeTargetWord.value ?: return
+        if (_challengeIsSolved.value) return
+
+        val nextInput = _challengeCurrentInput.value + syllable
+        _challengeCurrentInput.value = nextInput
+        speak(syllable)
+
+        if (nextInput.size == target.syllables.size) {
+            if (nextInput == target.syllables) {
+                _challengeIsSolved.value = true
+                _challengeScore.value += 10
+                _challengeStreak.value += 1
+                speak(target.hindi)
+            }
+        }
+    }
+
+    fun resetChallengeCurrent() {
+        _challengeCurrentInput.value = emptyList()
+        _challengeIsSolved.value = false
     }
 
     override fun onCleared() {

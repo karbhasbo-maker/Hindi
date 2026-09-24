@@ -5,11 +5,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -35,7 +37,7 @@ import com.example.ui.screens.FavoritesAndStatsSheet
 import com.example.ui.screens.InfoDialog
 import com.example.ui.screens.MasterChartScreen
 import com.example.ui.screens.PracticeQuizScreen
-import com.example.ui.screens.VowelsGuideScreen
+import com.example.ui.screens.WordMakerScreen
 import com.example.ui.screens.WritingPadScreen
 import com.example.ui.theme.SaffronPrimary
 import com.example.ui.viewmodel.AppTab
@@ -81,6 +83,17 @@ fun MainScreen(
     val strokeWidth by viewModel.canvasStrokeWidth.collectAsState()
     val clearTrigger by viewModel.canvasClearTrigger.collectAsState()
 
+    // Word Maker State
+    val wordBuilderSyllables by viewModel.wordBuilderSyllables.collectAsState()
+    val wordSearchQuery by viewModel.wordSearchQuery.collectAsState()
+    val selectedWordCategory by viewModel.selectedWordCategory.collectAsState()
+    val puzzleTargetWord by viewModel.challengeTargetWord.collectAsState()
+    val puzzleOptions by viewModel.challengeOptions.collectAsState()
+    val puzzleCurrentInput by viewModel.challengeCurrentInput.collectAsState()
+    val puzzleScore by viewModel.challengeScore.collectAsState()
+    val puzzleStreak by viewModel.challengeStreak.collectAsState()
+    val puzzleIsSolved by viewModel.challengeIsSolved.collectAsState()
+
     Scaffold(
         topBar = {
             BarahkhadiTopBar(
@@ -124,16 +137,16 @@ fun MainScreen(
                 )
 
                 NavigationBarItem(
-                    selected = currentTab == AppTab.VOWELS_GUIDE,
-                    onClick = { viewModel.setTab(AppTab.VOWELS_GUIDE) },
-                    icon = { Icon(Icons.Default.MenuBook, contentDescription = "Swar & Matra") },
-                    label = { Text("Vowels", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    selected = currentTab == AppTab.WORD_MAKER,
+                    onClick = { viewModel.setTab(AppTab.WORD_MAKER) },
+                    icon = { Icon(Icons.Default.Spellcheck, contentDescription = "Word Maker") },
+                    label = { Text("Words", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = SaffronPrimary,
                         selectedTextColor = SaffronPrimary,
                         indicatorColor = SaffronPrimary.copy(alpha = 0.15f)
                     ),
-                    modifier = Modifier.testTag("nav_item_vowels")
+                    modifier = Modifier.testTag("nav_item_words")
                 )
 
                 NavigationBarItem(
@@ -203,9 +216,28 @@ fun MainScreen(
                         )
                     }
 
-                    AppTab.VOWELS_GUIDE -> {
-                        VowelsGuideScreen(
-                            onSpeakVowel = { viewModel.speak(it) }
+                    AppTab.WORD_MAKER -> {
+                        WordMakerScreen(
+                            syllables = wordBuilderSyllables,
+                            onAddSyllable = { viewModel.addWordSyllable(it) },
+                            onRemoveLastSyllable = { viewModel.removeLastWordSyllable() },
+                            onRemoveSyllableAt = { viewModel.removeWordSyllableAt(it) },
+                            onClearBuilder = { viewModel.clearWordBuilder() },
+                            onLoadPresetWord = { viewModel.loadPresetWord(it) },
+                            onSpeakWord = { viewModel.speakFullWord(it) },
+                            searchQuery = wordSearchQuery,
+                            onSearchQueryChange = { viewModel.setWordSearchQuery(it) },
+                            selectedCategory = selectedWordCategory,
+                            onCategoryChange = { viewModel.setSelectedWordCategory(it) },
+                            puzzleTargetWord = puzzleTargetWord,
+                            puzzleOptions = puzzleOptions,
+                            puzzleCurrentInput = puzzleCurrentInput,
+                            puzzleScore = puzzleScore,
+                            puzzleStreak = puzzleStreak,
+                            puzzleIsSolved = puzzleIsSolved,
+                            onTapPuzzleOption = { viewModel.tapChallengeOption(it) },
+                            onResetPuzzleInput = { viewModel.resetChallengeCurrent() },
+                            onNextPuzzle = { viewModel.startNewWordChallenge() }
                         )
                     }
 

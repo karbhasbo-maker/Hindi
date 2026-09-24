@@ -60,6 +60,7 @@ fun MasterChartScreen(
     onSpeakSyllable: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var chartSubTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedVarga by remember { mutableStateOf("All") }
     var activeCombination by remember { mutableStateOf<SyllableCombination?>(null) }
@@ -78,9 +79,61 @@ fun MasterChartScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(14.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        // Search & Varga Filter Header
+        // Sub-Tab Switcher: 36x12 Matrix vs 12 Swar Guide
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(3.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (chartSubTab == 0) SaffronPrimary else Color.Transparent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { chartSubTab = 0 }
+                ) {
+                    Text(
+                        text = "📊 36×12 Matrix (तालिका)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (chartSubTab == 0) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (chartSubTab == 1) SaffronPrimary else Color.Transparent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { chartSubTab = 1 }
+                ) {
+                    Text(
+                        text = "🔤 Swar & Matra Guide",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (chartSubTab == 1) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        if (chartSubTab == 1) {
+            VowelsGuideScreen(onSpeakVowel = onSpeakSyllable)
+        } else {
+            // Search & Varga Filter Header
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -349,4 +402,5 @@ fun MasterChartScreen(
             }
         }
     }
+}
 }

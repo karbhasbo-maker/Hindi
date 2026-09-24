@@ -230,6 +230,12 @@ object BarahkhadiData {
         )
     }
 
+    fun getCombinationsForConsonant(consonant: Consonant): List<SyllableCombination> {
+        return MATRAS.mapIndexed { index, matra ->
+            getCombination(consonant, matra, index)
+        }
+    }
+
     fun getAllCombinations(): List<SyllableCombination> {
         val list = mutableListOf<SyllableCombination>()
         for (consonant in CONSONANTS) {
