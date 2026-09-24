@@ -1,0 +1,6 @@
+{
+  "name": "Hindi Barahkhadi",
+  "description": "Master Hindi Barahkhadi with English phonetics, interactive pronunciation audio, master chart, flashcards, speed quiz, and tracing pad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
