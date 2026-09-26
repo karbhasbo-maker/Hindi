@@ -1,11 +1,14 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -54,8 +58,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -115,275 +122,306 @@ fun ExplorerScreen(
         }
     }
 
+    val gridState = rememberLazyGridState()
+    var isSearchExpanded by remember { mutableStateOf(searchQuery.isNotEmpty() || selectedVarga != "All") }
+
+    // Scroll back to top whenever a new consonant is selected so Ka, Kaa, Ki are always immediately visible
+    LaunchedEffect(selectedConsonantIndex) {
+        gridState.scrollToItem(0)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
-        // Search & Filter Card
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                // Search Input Field
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("consonant_search_input"),
-                    placeholder = {
-                        Text(
-                            text = "Search consonant (e.g. Ka, Kha, ग, P)...",
-                            fontSize = 13.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { onSearchChange("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear search",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SaffronPrimary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Quick Varga Category Chips
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(BarahkhadiData.VARGA_CATEGORIES) { varga ->
-                        val isSelected = varga == selectedVarga
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onVargaChange(varga) },
-                            label = {
-                                Text(
-                                    text = varga,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = SaffronPrimary,
-                                selectedLabelColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Horizontal Consonant Selector Ribbon
-                Text(
-                    text = "SELECT A CONSONANT (${filteredConsonants.size} OF 36)",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.5.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("consonants_row")
-                ) {
-                    items(filteredConsonants) { (origIndex, consonant) ->
-                        val isSelected = origIndex == selectedConsonantIndex
-                        Box(
-                            modifier = Modifier
-                                .size(50.dp, 54.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isSelected) {
-                                        Brush.verticalGradient(
-                                            listOf(SaffronPrimary, AmberGold)
-                                        )
-                                    } else {
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.surfaceVariant,
-                                                MaterialTheme.colorScheme.surfaceVariant
-                                            )
-                                        )
-                                    }
-                                )
-                                .clickable { onSelectConsonant(origIndex) }
-                                .padding(4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = consonant.char,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = consonant.english,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isSelected) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Selected Consonant Hero Card
+        // Compact Unified Header Card (Consonant Selector + Search/Filter + Active Hero Bar)
         ElevatedCard(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                // Row 1: Horizontal Consonant Strip + Search Toggle
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(SaffronPrimary, AmberGold)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
+                            .weight(1f)
+                            .testTag("consonants_row")
                     ) {
-                        Text(
-                            text = currentConsonant.char,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "${currentConsonant.char} की बारहखड़ी",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = SaffronPrimary.copy(alpha = 0.15f)
+                        items(filteredConsonants) { (origIndex, consonant) ->
+                            val isSelected = origIndex == selectedConsonantIndex
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 46.dp, height = 48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (isSelected) {
+                                            Brush.verticalGradient(
+                                                listOf(SaffronPrimary, AmberGold)
+                                            )
+                                        } else {
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    MaterialTheme.colorScheme.surfaceVariant,
+                                                    MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                            )
+                                        }
+                                    )
+                                    .clickable { onSelectConsonant(origIndex) },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "${currentConsonant.english}a",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SaffronPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = consonant.char,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = consonant.english,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
-                        Text(
-                            text = "${currentConsonant.varga} • 12 Phonetic Variations",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Search / Filter Toggle Icon Button
+                    IconButton(
+                        onClick = { isSearchExpanded = !isSearchExpanded },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isSearchExpanded || searchQuery.isNotEmpty() || selectedVarga != "All") {
+                                    SaffronPrimary.copy(alpha = 0.15f)
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            )
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchExpanded) Icons.Default.Clear else Icons.Default.Search,
+                            contentDescription = "Search and Filter",
+                            tint = if (isSearchExpanded || searchQuery.isNotEmpty() || selectedVarga != "All") {
+                                SaffronPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
 
-                // Play All Sequence / Pause Button
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Collapsible Search & Filter Area
+                AnimatedVisibility(
+                    visible = isSearchExpanded,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
                 ) {
-                    Button(
-                        onClick = onPlayAllSequence,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isPlayingSequence) AmberGold else SaffronPrimary
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier.testTag("play_all_sequence_button")
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("consonant_search_input"),
+                            placeholder = {
+                                Text(
+                                    text = "Search consonant (e.g. Ka, Kha, ग)...",
+                                    fontSize = 12.sp
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { onSearchChange("") }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Clear",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SaffronPrimary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(BarahkhadiData.VARGA_CATEGORIES) { varga ->
+                                val isSelected = varga == selectedVarga
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onVargaChange(varga) },
+                                    label = {
+                                        Text(
+                                            text = varga,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = SaffronPrimary,
+                                        selectedLabelColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Row 2: Selected Consonant Info & Play All Controls (Compact Hero Bar)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = if (isPlayingSequence) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlayingSequence) "Pause" else "Play All",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (isPlayingSequence) "Pause" else "Play All 12",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(SaffronPrimary, AmberGold)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = currentConsonant.char,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "${currentConsonant.char} की बारहखड़ी",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = SaffronPrimary.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "${currentConsonant.english}a",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SaffronPrimary,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "${currentConsonant.varga} • 12 Variations",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
-                    if (isPlayingSequence) {
-                        IconButton(
-                            onClick = onStopAudio,
-                            modifier = Modifier.size(36.dp)
+                    // Play All Sequence Controls
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Button(
+                            onClick = onPlayAllSequence,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isPlayingSequence) AmberGold else SaffronPrimary
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("play_all_sequence_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Stop,
-                                contentDescription = "Stop",
-                                tint = MaterialTheme.colorScheme.error
+                                imageVector = if (isPlayingSequence) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlayingSequence) "Pause" else "Play All",
+                                modifier = Modifier.size(15.dp)
                             )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isPlayingSequence) "Pause" else "Play All 12",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (isPlayingSequence) {
+                            IconButton(
+                                onClick = onStopAudio,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Stop,
+                                    contentDescription = "Stop",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // 12 Barahkhadi Cards Grid
+        // 12 Barahkhadi Cards Grid - Starting cleanly at index 0 (Ka, Kaa, Ki...)
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 105.dp),
+            state = gridState,
+            columns = GridCells.Adaptive(minSize = 100.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
